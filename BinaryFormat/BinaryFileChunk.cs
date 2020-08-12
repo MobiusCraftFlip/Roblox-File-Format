@@ -26,12 +26,6 @@ namespace RobloxFiles.BinaryFormat
         public bool HasWriteBuffer { get; private set; }
         public byte[] WriteBuffer { get; private set; }
 
-        public BinaryRobloxFileReader GetDataReader(BinaryRobloxFile file)
-        {
-            MemoryStream buffer = new MemoryStream(Data);
-            return new BinaryRobloxFileReader(file, buffer);
-        }
-
         public override string ToString()
         {
             string chunkType = ChunkType.Replace('\0', ' ');
@@ -41,6 +35,9 @@ namespace RobloxFiles.BinaryFormat
 
         public BinaryRobloxFileChunk(BinaryRobloxFileReader reader)
         {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
             byte[] rawChunkType = reader.ReadBytes(4);
             ChunkType = Encoding.ASCII.GetString(rawChunkType);
 
@@ -81,7 +78,7 @@ namespace RobloxFiles.BinaryFormat
             if (!compress || CompressedSize > Size)
             {
                 CompressedSize = 0;
-                CompressedData = new byte[0];
+                CompressedData = Array.Empty<byte>();
             }
 
             ChunkType = writer.ChunkType;

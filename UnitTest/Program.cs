@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -42,6 +44,72 @@ namespace RobloxFiles.UnitTest
                 .ToList();
 
             children.ForEach(child => PrintTreeImpl(child, stack + 1));
+        }
+
+        static void GetImages(string path)
+        {
+            var file = RobloxFile.Open(path);
+            var serverStorage = file.FindFirstChildOfClass<ServerStorage>();
+
+            foreach (Instance inst in serverStorage.GetDescendants())
+            {
+                string contentUrl = "";
+
+                if (inst.IsA<MeshPart>())
+                {
+                    var meshPart = inst.Cast<MeshPart>();
+                    contentUrl = meshPart.TextureID;
+                }
+                else if (inst.IsA<FileMesh>())
+                {
+                    var fileMesh = inst.Cast<FileMesh>();
+                    contentUrl = fileMesh.TextureId;
+                }
+                else if (inst.IsA<Decal>())
+                {
+                    var decal = inst.Cast<Decal>();
+                    contentUrl = decal.Texture;
+                }
+
+                if (contentUrl.Length > 0)
+                {
+                    var id = Regex
+                        .Match(contentUrl, pattern)?
+                        .Value;
+
+                    var url = "https://assetgame.roblox.com/asset/?ID=" + id;
+                    string fileName = $"ImageDump/{id}.png";
+
+                    if (!File.Exists(fileName))
+                    {
+                        try
+                        {
+                            var ping = WebRequest.CreateHttp(url);
+                            ping.UserAgent = "RobloxStudio/WinInet";
+                            ping.Method = "GET";
+
+                            var response = ping.GetResponse() as HttpWebResponse;
+
+                            using (Stream stream = response.GetResponseStream())
+                            {
+                                Bitmap image = new Bitmap(stream);
+                                image.Save(fileName);
+
+                                Console.WriteLine($"Wrote {fileName}");
+                            }
+
+                            response.Close();
+                        }
+                        catch
+                        {
+                            Bitmap fake = new Bitmap(1, 1);
+                            fake.Save(fileName);
+
+                            Console.WriteLine($"Could not parse {fileName}");
+                        }
+                    }
+                }
+            }
         }
 
         static void PrintTree(string path)
@@ -111,7 +179,7 @@ namespace RobloxFiles.UnitTest
             if (args.Length > 0)
             {
                 string path = args[0];
-                PrintTree(path);
+                GetImages(path);
             }
             else
             {

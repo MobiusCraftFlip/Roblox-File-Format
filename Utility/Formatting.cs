@@ -39,6 +39,16 @@ internal static class Formatting
         return result;
     }
 
+    public static string ToUpperInvariant(this string value)
+    {
+        return value.ToUpper(invariant);
+    }
+
+    public static string ToLowerInvariant(this string value)
+    {
+        return value.ToLower(invariant);
+    }
+
     public static string ToInvariantString(this int value)
     {
         return value.ToString(invariant);

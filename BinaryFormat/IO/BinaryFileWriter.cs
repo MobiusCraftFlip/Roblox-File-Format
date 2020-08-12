@@ -28,7 +28,7 @@ namespace RobloxFiles.BinaryFormat
         // Instances in child->parent order
         internal List<Instance> PostInstances { get; private set; }
 
-        public BinaryRobloxFileWriter(BinaryRobloxFile file, Stream workBuffer = null) : base(workBuffer ?? new MemoryStream())
+        public BinaryRobloxFileWriter(BinaryRobloxFile file, Stream workBuffer) : base(workBuffer)
         {
             File = file;
 

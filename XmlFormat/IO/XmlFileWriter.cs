@@ -24,8 +24,8 @@ namespace RobloxFiles.XmlFormat
             Guid referentGuid = Guid.NewGuid();
 
             string referent = "RBX" + referentGuid
-                .ToString()
-                .ToUpper();
+                .ToInvariantString()
+                .ToUpperInvariant();
 
             return referent.Replace("-", "");
         }
@@ -77,7 +77,7 @@ namespace RobloxFiles.XmlFormat
                     case PropertyType.Float:
                     case PropertyType.Int64:
                     case PropertyType.Double:
-                        propType = propType.ToLower();
+                        propType = propType.ToLowerInvariant();
                         break;
                     case PropertyType.String:
                         propType = (prop.HasRawBuffer ? "BinaryString" : "string");

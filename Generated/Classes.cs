@@ -8,6 +8,7 @@ using RobloxFiles.Enums;
 using RobloxFiles.Utility;
 
 #pragma warning disable IDE1006 // Suppress warnings about camelCase.
+#pragma warning disable CA1051
 
 namespace RobloxFiles
 {
@@ -460,7 +461,7 @@ namespace RobloxFiles
         public BrickColor TorsoColor
         {
             get { return BrickColor.FromColor3(TorsoColor3); }
-            set { TorsoColor3 = value.Color; }
+            set => TorsoColor3 = value.Color;
         }
 
         public Color3 TorsoColor3 = Color3.FromRGB(40, 127, 71);
@@ -2161,7 +2162,7 @@ namespace RobloxFiles
     {
         public string ClusterGrid = "";
         public string ClusterGridV2 = "";
-        public byte[] ClusterGridV3 = new byte[0];
+        public byte[] ClusterGridV3 = Array.Empty<byte>();
         public bool Decoration = false;
         public byte[] MaterialColors = Convert.FromBase64String("AAAAAAAAan8/P39rf2Y/ilY+j35fi21PZmxvZbDqw8faiVpHOi4kHh4lZlw76JxKc3trhHtagcLgc4RKxr21zq2UlJSM");
         public byte[] PhysicsGrid = Convert.FromBase64String("AgMAAAAAAAAAAAAAAAA=");
@@ -2177,9 +2178,9 @@ namespace RobloxFiles
     {
         public CollisionFidelity CollisionFidelity = CollisionFidelity.Default;
         public Vector3 InitialSize = new Vector3(1, 1, 1);
-        public byte[] LODData = new byte[0];
+        public byte[] LODData = Array.Empty<byte>();
         public SharedString PhysicalConfigData = SharedString.FromBase64("1B2M2Y8AsgTpgAmY7PhCfg==");
-        public byte[] PhysicsData = new byte[0];
+        public byte[] PhysicsData = Array.Empty<byte>();
     }
 
     public class MeshPart : TriangleMeshPart
@@ -2203,9 +2204,9 @@ namespace RobloxFiles
     public class PartOperation : TriangleMeshPart
     {
         public Content AssetId = "";
-        public byte[] ChildData = new byte[0];
+        public byte[] ChildData = Array.Empty<byte>();
         public FormFactor FormFactor = FormFactor.Custom;
-        public byte[] MeshData = new byte[0];
+        public byte[] MeshData = Array.Empty<byte>();
         public RenderFidelity RenderFidelity = RenderFidelity.Precise;
         public float SmoothingAngle = 0;
         public bool UsePartColor = false;
@@ -2247,6 +2248,7 @@ namespace RobloxFiles
     {
         public ModelLevelOfDetail LevelOfDetail = ModelLevelOfDetail.Automatic;
         public CFrame ModelInPrimary = new CFrame();
+        public byte[] ModelMeshData = Array.Empty<byte>();
         public BasePart PrimaryPart = null;
     }
 
@@ -2298,8 +2300,8 @@ namespace RobloxFiles
 
     public class PartOperationAsset : Instance
     {
-        public byte[] ChildData = new byte[0];
-        public byte[] MeshData = new byte[0];
+        public byte[] ChildData = Array.Empty<byte>();
+        public byte[] MeshData = Array.Empty<byte>();
     }
 
     public class ParticleEmitter : Instance
@@ -3017,7 +3019,7 @@ namespace RobloxFiles
     {
         public Vector3int16 ExtentsMax = new Vector3int16();
         public Vector3int16 ExtentsMin = new Vector3int16();
-        public byte[] GridV3 = new byte[0];
+        public byte[] GridV3 = Array.Empty<byte>();
         public byte[] SmoothGrid = Convert.FromBase64String("AQU=");
     }
 
@@ -3250,7 +3252,7 @@ namespace RobloxFiles
 
     public class BinaryStringValue : ValueBase
     {
-        public byte[] Value = new byte[0];
+        public byte[] Value = Array.Empty<byte>();
     }
 
     public class BoolValue : ValueBase

@@ -42,7 +42,7 @@ namespace RobloxFiles.XmlFormat.PropertyTokens
             int signed = (int)rawValue;
             uint value = (uint)signed;
 
-            node.InnerText = value.ToString();
+            node.InnerText = value.ToInvariantString();
         }
     }
 }

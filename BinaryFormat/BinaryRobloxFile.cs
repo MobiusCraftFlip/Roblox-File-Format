@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-
+using System.Threading.Tasks;
 using RobloxFiles.BinaryFormat;
 using RobloxFiles.BinaryFormat.Chunks;
 using RobloxFiles.DataTypes;
@@ -41,6 +41,8 @@ namespace RobloxFiles
         public bool HasSignatures => (SIGN != null);
         public IReadOnlyList<Signature> Signatures => SIGN?.Signatures;
 
+        private readonly string[] ChunkReadOrder = new string[6] { "META", "SSTR", "INST", "PROP", "PRNT", "SIGN" };
+
         public BinaryRobloxFile()
         {
             Name = "BinaryRobloxFile";
@@ -48,7 +50,7 @@ namespace RobloxFiles
             Referent = "-1";
         }
         
-        protected override void ReadFile(byte[] contents)
+        protected override async Task ReadFile(byte[] contents)
         {
             using (MemoryStream file = new MemoryStream(contents))
             using (BinaryRobloxFileReader reader = new BinaryRobloxFileReader(this, file))
@@ -66,63 +68,84 @@ namespace RobloxFiles
                 NumInstances = reader.ReadUInt32();
                 Reserved = reader.ReadInt64();
 
-                // Begin reading the file chunks.
-                bool reading = true;
-
                 Classes = new INST[NumClasses];
                 Instances = new Instance[NumInstances];
 
-                while (reading)
+                // Begin reading the file chunks.
+                while (true)
                 {
                     try
                     {
                         var chunk = new BinaryRobloxFileChunk(reader);
-                        IBinaryFileChunk handler = null;
-                        
-                        switch (chunk.ChunkType)
-                        {
-                            case "INST":
-                                handler = new INST();
-                                break;
-                            case "PROP":
-                                handler = new PROP();
-                                break;
-                            case "PRNT":
-                                handler = new PRNT();
-                                break;
-                            case "META":
-                                handler = new META();
-                                break;
-                            case "SSTR":
-                                handler = new SSTR();
-                                break;
-                            case "SIGN":
-                                handler = new SIGN();
-                                break;
-                            case "END\0":
-                                ChunksImpl.Add(chunk);
-                                reading = false;
-                                break;
-                            case string unhandled:
-                                Console.WriteLine("BinaryRobloxFile - Unhandled chunk-type: {0}!", unhandled);
-                                break;
-                            default: break;
-                        }
+                        ChunksImpl.Add(chunk);
 
-                        if (handler != null)
-                        {
-                            chunk.Handler = handler;
+                        if (chunk.ChunkType != "END\0")
+                            continue;
 
-                            using (var dataReader = chunk.GetDataReader(this))
-                                handler.Load(dataReader);
-
-                            ChunksImpl.Add(chunk);
-                        }
+                        break;
                     }
                     catch (EndOfStreamException)
                     {
                         throw new Exception("Unexpected end of file!");
                     }
+                }
+
+                foreach (string chunkType in ChunkReadOrder)
+                {
+                    var taskPool = new List<Task>();
+                    var chunks = Chunks.Where(chunk => chunk.ChunkType == chunkType);
+                    
+                    foreach (var chunk in chunks)
+                    {
+                        Task read = Task.Run(() =>
+                        {
+                            IBinaryFileChunk handler = null;
+
+                            switch (chunk.ChunkType)
+                            {
+                                case "INST":
+                                    handler = new INST();
+                                    break;
+                                case "PROP":
+                                    handler = new PROP();
+                                    break;
+                                case "PRNT":
+                                    handler = new PRNT();
+                                    break;
+                                case "META":
+                                    handler = new META();
+                                    break;
+                                case "SSTR":
+                                    handler = new SSTR();
+                                    break;
+                                case "SIGN":
+                                    handler = new SIGN();
+                                    break;
+                                case "END\0":
+                                    break;
+                                case string unhandled:
+                                    Console.WriteLine("BinaryRobloxFile - Unhandled chunk-type: {0}!", unhandled);
+                                    break;
+                                default: break;
+                            }
+
+                            if (handler != null)
+                            {
+                                Console.WriteLine($"Reading Chunk: {chunk}");
+                                chunk.Handler = handler;
+
+                                using (var dataBuffer = new MemoryStream(chunk.Data))
+                                    using (var dataReader = new BinaryRobloxFileReader(this, dataBuffer))
+                                        handler.Load(dataReader);
+
+                                Console.WriteLine($"Read Chunk: {chunk}");
+                            }
+                        });
+
+                        taskPool.Add(read);
+                    }
+
+                    await Task.WhenAll(taskPool);
                 }
             }
         }
@@ -133,16 +156,17 @@ namespace RobloxFiles
             // Generate the chunk data.
             //////////////////////////////////////////////////////////////////////////
 
-            using (var writer = new BinaryRobloxFileWriter(this))
+            using (var writeStream = new MemoryStream())
+            using (var writer = new BinaryRobloxFileWriter(this, writeStream))
             {
                 // Clear the existing data.
                 Referent = "-1";
                 ChunksImpl.Clear();
-                
+
                 NumInstances = 0;
                 NumClasses = 0;
                 SSTR = null;
-                
+
                 // Recursively capture all instances and classes.
                 writer.RecordInstances(Children);
 
@@ -168,7 +192,7 @@ namespace RobloxFiles
                 // Write the PRNT chunk.
                 var parents = new PRNT();
                 writer.SaveChunk(parents);
-                
+
                 // Write the SSTR chunk.
                 if (HasSharedStrings)
                     writer.SaveChunk(SSTR, 0);

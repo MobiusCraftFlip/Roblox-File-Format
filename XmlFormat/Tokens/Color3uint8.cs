@@ -35,7 +35,7 @@ namespace RobloxFiles.XmlFormat.PropertyTokens
                  b = color.B;
 
             uint rgb = (255u << 24) | (r << 16) | (g << 8) | b;
-            node.InnerText = rgb.ToString();
+            node.InnerText = rgb.ToInvariantString();
         }
     }
 }

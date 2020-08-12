@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml;
 
 using RobloxFiles.DataTypes;
@@ -109,7 +111,7 @@ namespace RobloxFiles.XmlFormat
                     if (!tokenHandler.ReadProperty(prop, propNode))
                         Console.WriteLine("Could not read property: " + prop.GetFullName() + '!');
 
-                    instance.AddProperty(ref prop);
+                    instance.AddProperty(prop);
                 }
                 else
                 {
@@ -118,7 +120,7 @@ namespace RobloxFiles.XmlFormat
             }
         }
 
-        public static Instance ReadInstance(XmlNode instNode, XmlRobloxFile file)
+        public static async Task<Instance> ReadInstance(XmlNode instNode, XmlRobloxFile file)
         {
             var error = createErrorHandler("ReadInstance");
 
@@ -127,6 +129,7 @@ namespace RobloxFiles.XmlFormat
                 throw error("Provided XmlNode's name should be 'Item'!");
 
             XmlNode classToken = instNode.Attributes.GetNamedItem("class");
+
             if (classToken == null)
                 throw error("Got an Item without a defined 'class' attribute!");
 
@@ -151,19 +154,27 @@ namespace RobloxFiles.XmlFormat
             }
 
             // Process the child nodes of this instance.
+            var taskPool = new List<Task>();
+
             foreach (XmlNode childNode in instNode.ChildNodes)
             {
-                if (childNode.Name == "Properties")
+                Task read = Task.Run(async () =>
                 {
-                    ReadProperties(inst, childNode);
-                }
-                else if (childNode.Name == "Item")
-                {
-                    Instance child = ReadInstance(childNode, file);
-                    child.Parent = inst;
-                }
+                    if (childNode.Name == "Properties")
+                    {
+                        ReadProperties(inst, childNode);
+                    }
+                    else if (childNode.Name == "Item")
+                    {
+                        Instance child = await ReadInstance(childNode, file);
+                        child.Parent = inst;
+                    }
+                });
+                
+                taskPool.Add(read);
             }
 
+            await Task.WhenAll(taskPool);
             return inst;
         }
     }

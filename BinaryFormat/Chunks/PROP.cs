@@ -55,7 +55,7 @@ namespace RobloxFiles.BinaryFormat.Chunks
                 Property prop = new Property(instance, this);
                 props[i] = prop;
 
-                instance.AddProperty(ref prop);
+                instance.AddProperty(prop);
             }
 
             // Setup some short-hand functions for actions used during the read procedure.

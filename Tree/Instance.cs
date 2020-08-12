@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -23,7 +24,7 @@ namespace RobloxFiles
         public string ClassName => GetType().Name;
 
         /// <summary>Internal list of properties that are under this Instance.</summary>
-        private Dictionary<string, Property> props = new Dictionary<string, Property>();
+        private ConcurrentDictionary<string, Property> props = new ConcurrentDictionary<string, Property>();
 
         /// <summary>A list of properties that are defined under this Instance.</summary>
         public IReadOnlyDictionary<string, Property> Properties => props;
@@ -66,7 +67,7 @@ namespace RobloxFiles
         {
             get
             {
-                return Attributes?.Serialize() ?? new byte[0];
+                return Attributes?.Serialize() ?? Array.Empty<byte>();
             }
             set
             {
@@ -387,7 +388,7 @@ namespace RobloxFiles
 
             T result = null;
             
-            if (query.Count() > 0)
+            if (query.Any())
             {
                 result = query.First();
             }
@@ -421,7 +422,7 @@ namespace RobloxFiles
 
             T result = null;
 
-            if (query.Count() > 0)
+            if (query.Any() > 0)
             {
                 result = query.First();
             }
@@ -476,14 +477,9 @@ namespace RobloxFiles
         /// Adds a property by reference to this Instance's property list.
         /// </summary>
         /// <param name="prop">A reference to the property that will be added.</param>
-        internal void AddProperty(ref Property prop)
+        internal void AddProperty(Property prop)
         {
-            prop.Instance = this;
-
-            if (props.ContainsKey(prop.Name))
-                props.Remove(prop.Name);
-
-            props.Add(prop.Name, prop);
+            props.AddOrUpdate(prop.Name, prop, (key, oldProp) => prop);
         }
 
         /// <summary>
@@ -499,7 +495,7 @@ namespace RobloxFiles
                 prop.Instance = null;
             }
 
-            return props.Remove(name);
+            return props.TryRemove(name, out _);
         }
 
         /// <summary>
@@ -541,7 +537,7 @@ namespace RobloxFiles
                             Instance = this
                         };
 
-                        AddProperty(ref newProp);
+                        AddProperty(newProp);
                     }
                     else
                     {
@@ -558,13 +554,13 @@ namespace RobloxFiles
             if (tags == null)
             {
                 tags = new Property("Tags", PropertyType.String);
-                AddProperty(ref tags);
+                AddProperty(tags);
             }
 
             if (attributes == null)
             {
                 attributes = new Property("AttributesSerialize", PropertyType.String);
-                AddProperty(ref attributes);
+                AddProperty(attributes);
             }
 
             return Properties;

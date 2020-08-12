@@ -11,7 +11,7 @@ namespace RobloxFiles
     /// </summary>
     public abstract class RobloxFile : Instance
     {
-        protected abstract void ReadFile(byte[] buffer);
+        protected abstract Task ReadFile(byte[] buffer);
 
         /// <summary>
         /// Saves this RobloxFile to the provided stream.
@@ -20,10 +20,10 @@ namespace RobloxFiles
         public abstract void Save(Stream stream);
 
         /// <summary>
-        /// Opens a RobloxFile using the provided buffer.
+        /// Asynchronously opens a RobloxFile using the provided buffer.
         /// </summary>
-        /// <returns>The opened RobloxFile.</returns>
-        public static RobloxFile Open(byte[] buffer)
+        /// <returns>A task which will complete once the file is opened, with the resulting RobloxFile.</returns>
+        public static async Task<RobloxFile> OpenAsync(byte[] buffer)
         {
             if (buffer.Length > 14)
             {
@@ -37,7 +37,7 @@ namespace RobloxFiles
 
                 if (file != null)
                 {
-                    file.ReadFile(buffer);
+                    await file.ReadFile(buffer);
                     return file;
                 }
             }
@@ -46,11 +46,11 @@ namespace RobloxFiles
         }
 
         /// <summary>
-        /// Opens a Roblox file by reading from a provided Stream.
+        /// Asynchronously opens a Roblox file by reading from the provided Stream.
         /// </summary>
         /// <param name="stream">The stream to read the Roblox file from.</param>
-        /// <returns>The opened RobloxFile.</returns>
-        public static RobloxFile Open(Stream stream)
+        /// <returns>A task which will complete once the file is opened, with the resulting RobloxFile.</returns>
+        public static async Task<RobloxFile> OpenAsync(Stream stream)
         {
             byte[] buffer;
 
@@ -60,48 +60,55 @@ namespace RobloxFiles
                 buffer = memoryStream.ToArray();
             }
 
-            return Open(buffer);
+            return await OpenAsync(buffer);
         }
 
         /// <summary>
         /// Opens a Roblox file from a provided file path.
+        /// </summary>
+        /// <param name="filePath">A path to a Roblox file to be opened.</param>
+        /// <returns>A task which will complete once the file is opened, with the resulting RobloxFile.</returns>
+        public static async Task<RobloxFile> OpenAsync(string filePath)
+        {
+            byte[] buffer = File.ReadAllBytes(filePath);
+            return await OpenAsync(buffer);
+        }
+
+        /// <summary>
+        /// Synchronously opens a Roblox file from the provided buffer.</param>
+        /// <returns>The opened RobloxFile.</returns>
+        public static RobloxFile Open(byte[] buffer)
+        {
+            var fileTask = OpenAsync(buffer);
+            fileTask.Wait();
+
+            return fileTask.Result;
+        }
+
+        /// <summary>
+        /// Synchronously opens a Roblox file from the provided stream.
+        /// </summary>
+        /// <param name="stream">The stream to read the Roblox file from.</param>
+        /// <returns>The opened RobloxFile.</returns>
+        public static RobloxFile Open(Stream stream)
+        {
+            var fileTask = OpenAsync(stream);
+            fileTask.Wait();
+
+            return fileTask.Result;
+        }
+
+        /// <summary>
+        /// Synchronously opens a Roblox file from a provided file path.
         /// </summary>
         /// <param name="filePath">A path to a Roblox file to be opened.</param>
         /// <returns>The opened RobloxFile.</returns>
         public static RobloxFile Open(string filePath)
         {
-            byte[] buffer = File.ReadAllBytes(filePath);
-            return Open(buffer);
-        }
+            var fileTask = OpenAsync(filePath);
+            fileTask.Wait();
 
-        /// <summary>
-        /// Creates and runs a Task to open a Roblox file from a byte sequence that represents the file.
-        /// </summary>
-        /// <param name="buffer">A byte sequence that represents the file.</param>
-        /// <returns>A task which will complete once the file is opened with the resulting RobloxFile.</returns>
-        public static Task<RobloxFile> OpenAsync(byte[] buffer)
-        {
-            return Task.Run(() => Open(buffer));
-        }
-
-        /// <summary>
-        /// Creates and runs a Task to open a Roblox file using a provided Stream.
-        /// </summary>
-        /// <param name="stream">The stream to read the Roblox file from.</param>
-        /// <returns>A task which will complete once the file is opened with the resulting RobloxFile.</returns>
-        public static Task<RobloxFile> OpenAsync(Stream stream)
-        {
-            return Task.Run(() => Open(stream));
-        }
-
-        /// <summary>
-        /// Opens a Roblox file from a provided file path.
-        /// </summary>
-        /// <param name="filePath">A path to a Roblox file to be opened.</param>
-        /// <returns>A task which will complete once the file is opened with the resulting RobloxFile.</returns>
-        public static Task<RobloxFile> OpenAsync(string filePath)
-        {
-            return Task.Run(() => Open(filePath));
+            return fileTask.Result;
         }
 
         /// <summary>

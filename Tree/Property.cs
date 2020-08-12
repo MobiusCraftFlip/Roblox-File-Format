@@ -103,16 +103,26 @@ namespace RobloxFiles
             if (RawValue is SharedString)
             {
                 var sharedString = CastValue<SharedString>();
-                RawBuffer = sharedString.SharedValue;
-                return;
+
+                if (sharedString != null)
+                {
+                    RawBuffer = sharedString.SharedValue;
+                    return;
+                }
             }
-            else if (RawValue is ProtectedString)
+
+            if (RawValue is ProtectedString)
             {
                 var protectedString = CastValue<ProtectedString>();
-                RawBuffer = protectedString.RawBuffer;
-                return;
+
+                if (protectedString != null)
+                {
+                    RawBuffer = protectedString.RawBuffer;
+                    return;
+                }
             }
-            else if (RawValue is byte[])
+
+            if (RawValue is byte[])
             {
                 RawBuffer = RawValue as byte[];
                 return;

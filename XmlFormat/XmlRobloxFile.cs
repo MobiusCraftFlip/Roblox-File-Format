@@ -4,6 +4,7 @@ using System.IO;
 
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 
 using RobloxFiles.DataTypes;
@@ -28,7 +29,7 @@ namespace RobloxFiles
             Referent = "null";
         }
         
-        protected override void ReadFile(byte[] buffer)
+        protected override async Task ReadFile(byte[] buffer)
         {
             try
             {
@@ -54,22 +55,32 @@ namespace RobloxFiles
                     throw new Exception("XmlRobloxFile: Provided version must be at least 4!");
 
                 // Process the instances.
+                var taskPool = new List<Task>();
+
                 foreach (XmlNode child in roblox.ChildNodes)
                 {
-                    if (child.Name == "Item")
+                    Task read = Task.Run(async () =>
                     {
-                        Instance item = XmlRobloxFileReader.ReadInstance(child, this);
-                        item.Parent = this;
-                    }
-                    else if (child.Name == "SharedStrings")
-                    {
-                        XmlRobloxFileReader.ReadSharedStrings(child, this);
-                    }
-                    else if (child.Name == "Meta")
-                    {
-                        XmlRobloxFileReader.ReadMetadata(child, this);
-                    }
+                        if (child.Name == "Item")
+                        {
+                            Instance item = await XmlRobloxFileReader.ReadInstance(child, this);
+                            item.Parent = this;
+                        }
+                        else if (child.Name == "SharedStrings")
+                        {
+                            XmlRobloxFileReader.ReadSharedStrings(child, this);
+                        }
+                        else if (child.Name == "Meta")
+                        {
+                            XmlRobloxFileReader.ReadMetadata(child, this);
+                        }
+                    });
+
+                    taskPool.Add(read);
                 }
+
+                await Task.WhenAll(taskPool);
+                taskPool.Clear();
 
                 // Query the properties.
                 var allProps = Instances.Values
